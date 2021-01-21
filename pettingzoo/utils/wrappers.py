@@ -69,6 +69,9 @@ class BaseWrapper(AECEnv):
         self.agents = self.env.agents
         self._cumulative_rewards = self.env._cumulative_rewards
 
+    def save(self, filename, headers={}):
+        return self.env.save(filename, headers)
+
 
 class TerminateIllegalWrapper(BaseWrapper):
     '''
@@ -114,6 +117,7 @@ class TerminateIllegalWrapper(BaseWrapper):
             self._terminated = True
         else:
             super().step(action)
+
 
 
 class CaptureStdoutWrapper(BaseWrapper):

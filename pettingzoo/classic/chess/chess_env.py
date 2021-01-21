@@ -1,12 +1,18 @@
 from . import chess_utils
 import chess
+import chess.svg
+import chess.pgn
 from pettingzoo import AECEnv
 from gym import spaces
 import numpy as np
 import warnings
 from pettingzoo.utils.agent_selector import agent_selector
 from pettingzoo.utils import wrappers
-
+from datetime import date
+try:
+    from IPython.display import SVG, display
+except ImportError:
+    print("IPython installation ot found. iphython render mode disabled.")
 
 def env():
     env = raw_env()
@@ -19,7 +25,7 @@ def env():
 
 class raw_env(AECEnv):
 
-    metadata = {'render.modes': ['human']}
+    metadata = {'render.modes': ['human','ipython']}
 
     def __init__(self):
         super().__init__()
@@ -28,6 +34,17 @@ class raw_env(AECEnv):
 
         self.agents = ["player_{}".format(i) for i in range(2)]
         self.possible_agents = self.agents[:]
+
+        # pgn move stack export
+        self.game = chess.pgn.Game()
+
+        self.game.headers["White"] = self.agents[0]
+        self.game.headers["Black"] = self.agents[1]
+        self.game.headers["Date"] = str(date.today())
+
+        self.game.setup(self.board)
+
+        self.node = self.game
 
         self._agent_selector = agent_selector(self.agents)
 
@@ -60,6 +77,16 @@ class raw_env(AECEnv):
 
         self.board = chess.Board()
 
+        self.game = chess.pgn.Game()
+
+        self.game.headers["White"] = self.agents[0]
+        self.game.headers["Black"] = self.agents[1]
+        self.game.headers["Date"] = str(date.today())
+
+        self.game.setup(self.board)
+
+        self.node = self.game
+
         self._agent_selector = agent_selector(self.agents)
         self.agent_selection = self._agent_selector.reset()
 
@@ -86,6 +113,8 @@ class raw_env(AECEnv):
         assert chosen_move in self.board.legal_moves
         self.board.push(chosen_move)
 
+        self.node = self.node.add_variation(chosen_move)
+
         next_legal_moves = chess_utils.legal_moves(self.board)
 
         is_stale_or_checkmate = not any(next_legal_moves)
@@ -98,6 +127,7 @@ class raw_env(AECEnv):
 
         if game_over:
             result = self.board.result(claim_draw=True)
+            self.game.headers["Result"] = result
             result_val = chess_utils.result_to_int(result)
             self.set_game_result(result_val)
 
@@ -105,8 +135,23 @@ class raw_env(AECEnv):
         self._dones_step_first()
 
     def render(self, mode='human'):
-        print(self.board)
-        return str(self.board)
+        if mode == 'human':
+            display(self.board)
+            return self.board
+        elif mode == 'ipython':
+            try:
+                print(self.board)
+                return str(self.board)
+            except:
+                raise ImportError("IPython is not installed on this machine")
+        else:
+            raise ValueError("bad value for render mode")
+        
+    def save(self, filename, headers={}):
+        for h in headers.keys():
+            self.game.headers[h] = headers[h]
+        print(self.game, file=open(filename, "w"), end="\n\n")
+        return self.game
 
     def close(self):
         pass

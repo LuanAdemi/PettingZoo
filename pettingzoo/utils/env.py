@@ -24,6 +24,9 @@ class AECEnv:
     def render(self, mode='human'):
         raise NotImplementedError
 
+    def save(self, filename, headers={}):
+        raise NotImplementedError
+
     def close(self):
         pass
 

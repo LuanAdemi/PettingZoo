@@ -1,5 +1,3 @@
-import os
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 import numpy as np
 import time
 import pygame
